@@ -1,0 +1,7 @@
+url,verdict,flags,details
+https://google.com,SAFE,0,None
+https://facebook.com,SAFE,0,None
+http://paypal-verify.tk/login?suspended=true,PHISHING,3,No HTTPS — connection is not encrypted | Suspicious TLD '.tk' — hackers use these for free | Suspicious keyword 'verify' found — creates false urgency
+http://192.168.1.1/bank/login,PHISHING,3,No HTTPS — connection is not encrypted | Raw IP address used instead of a domain name | Too many subdomains (3 dots) — real domain may be buried
+https://secure-amazon-login.verify-account.xyz/update,PHISHING,3,"Suspicious TLD '.xyz' — hackers use these for free | Brand spoofing — 'amazon' used in subdomain, not the real domain | Suspicious keyword 'verify' found — creates false urgency"
+https://apple.com.phishing-site.ml/id/verify,PHISHING,4,"Suspicious TLD '.ml' — hackers use these for free | Too many subdomains (3 dots) — real domain may be buried | Brand spoofing — 'apple' used in subdomain, not the real domain | Suspicious keyword 'verify' found — creates false urgency"
