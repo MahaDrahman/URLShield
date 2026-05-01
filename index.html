@@ -1,109 +1,428 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>URLShield - URL Checker</title>
-    <style>
-        body {
-            font-family: Arial;
-            text-align: center;
-            background: #f4f4f4;
-            padding: 50px;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>URLShield</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .box {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            width: 400px;
-            margin: auto;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
+    :root {
+      --bg:       #080810;
+      --surface:  #10101c;
+      --card:     #14141f;
+      --border:   #23233a;
+      --accent:   #7c6dfa;
+      --accent2:  #a78bfa;
+      --safe:     #22c55e;
+      --warn:     #f59e0b;
+      --danger:   #ef4444;
+      --text:     #e2e2f0;
+      --muted:    #5a5a78;
+      --safe-bg:  rgba(34,197,94,0.07);
+      --warn-bg:  rgba(245,158,11,0.07);
+      --danger-bg:rgba(239,68,68,0.07);
+    }
 
-        input {
-            width: 90%;
-            padding: 10px;
-            margin: 10px 0;
-        }
+    body {
+      font-family: 'Space Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 40px 20px 60px;
+    }
 
-        button {
-            padding: 10px 20px;
-            background: blue;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
+    /* subtle grid bg */
+    body::before {
+      content:'';
+      position:fixed;inset:0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 40px 40px;
+      opacity: 0.18;
+      pointer-events:none;
+      z-index:0;
+    }
 
-        #result {
-            margin-top: 20px;
-            font-size: 18px;
-            font-weight: bold;
-        }
-    </style>
+    .wrap {
+      max-width: 760px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Header ── */
+    header { margin-bottom: 40px; }
+
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 2.8rem;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #fff 30%, var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .tagline {
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin-top: 4px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    /* ── Input card ── */
+    .input-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .input-label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .url-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.9rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .url-input:focus { border-color: var(--accent); }
+    .url-input::placeholder { color: var(--muted); }
+
+    .scan-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 14px 28px;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .scan-btn:hover  { background: #6a5be8; }
+    .scan-btn:active { transform: scale(0.97); }
+    .scan-btn:disabled { opacity: 0.5; cursor: default; }
+
+    /* example pills */
+    .examples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 14px;
+    }
+    .ex-pill {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.68rem;
+      padding: 4px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .ex-pill:hover { border-color: var(--accent); color: var(--accent2); }
+
+    /* ── Verdict banner ── */
+    #verdict-box {
+      display: none;
+      border-radius: 14px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+      border: 1px solid transparent;
+      animation: fadeIn 0.35s ease;
+    }
+    .verdict-safe    { background: var(--safe-bg);   border-color: var(--safe);   }
+    .verdict-warn    { background: var(--warn-bg);   border-color: var(--warn);   }
+    .verdict-danger  { background: var(--danger-bg); border-color: var(--danger); }
+
+    .verdict-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .verdict-sub { font-size: 0.78rem; color: var(--muted); }
+
+    /* ── Results table ── */
+    #results-box { display: none; animation: fadeIn 0.35s ease; }
+
+    .results-header {
+      font-size: 0.68rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+      padding: 0 4px;
+    }
+
+    .check-row {
+      display: grid;
+      grid-template-columns: 36px 1fr 70px;
+      align-items: center;
+      gap: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 6px;
+      transition: border-color 0.2s;
+    }
+    .check-row:hover { border-color: #3a3a55; }
+    .check-row.fail  { border-left: 3px solid var(--danger); }
+    .check-row.pass  { border-left: 3px solid var(--safe); }
+
+    .check-icon {
+      font-size: 1.1rem;
+      text-align: center;
+    }
+
+    .check-info { min-width: 0; }
+    .check-name {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 3px;
+    }
+    .check-detail {
+      font-size: 0.72rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .check-badge {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-align: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+    .badge-pass { background: rgba(34,197,94,0.15); color: var(--safe); }
+    .badge-fail { background: rgba(239,68,68,0.15); color: var(--danger); }
+
+    /* summary footer */
+    .summary {
+      margin-top: 14px;
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-align: right;
+      padding-right: 4px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity:0; transform: translateY(8px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+
+    /* spinner */
+    .spin {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
 </head>
-
 <body>
+<div class="wrap">
 
-<div class="box">
-    <h2>🔐 URLShield Checker</h2>
+  <!-- Header -->
+  <header>
+    <div class="logo">URLShield</div>
+    <div class="tagline">Phishing URL Detector</div>
+  </header>
 
-    <input type="text" id="urlInput" placeholder="Enter URL here">
-    <br>
-    <button onclick="checkURL()">Check URL</button>
+  <!-- Input -->
+  <div class="input-card">
+    <div class="input-label">Enter URL to check</div>
+    <div class="input-row">
+      <input class="url-input" id="urlInput"
+             placeholder="https://example.com/login"
+             type="text" autocomplete="off"
+             onkeydown="if(event.key==='Enter') scan()"/>
+      <button class="scan-btn" id="scanBtn" onclick="scan()">Scan</button>
+    </div>
+    <div class="examples">
+      <button class="ex-pill" onclick="tryUrl('https://google.com')">google.com</button>
+      <button class="ex-pill" onclick="tryUrl('http://paypal-verify.tk/login?suspended=true')">fake paypal</button>
+      <button class="ex-pill" onclick="tryUrl('http://192.168.1.1/bank/login')">IP attack</button>
+      <button class="ex-pill" onclick="tryUrl('https://secure-amazon-login.verify-account.xyz/update')">amazon spoof</button>
+      <button class="ex-pill" onclick="tryUrl('https://facebook.com')">facebook.com</button>
+    </div>
+  </div>
 
-    <div id="result"></div>
+  <!-- Verdict -->
+  <div id="verdict-box">
+    <div class="verdict-title" id="verdict-title"></div>
+    <div class="verdict-sub"   id="verdict-sub"></div>
+  </div>
+
+  <!-- Results -->
+  <div id="results-box">
+    <div class="results-header">Check details</div>
+    <div id="checks-list"></div>
+    <div class="summary" id="summary"></div>
+  </div>
+
 </div>
 
 <script>
-function checkURL() {
-    let url = document.getElementById("urlInput").value;
-    let result = document.getElementById("result");
+const TLDS  = ['.tk','.ml','.ga','.cf','.gq','.xyz','.top','.click','.link','.pw'];
+const BRANDS = ['paypal','amazon','google','facebook','apple','microsoft','netflix','bank','instagram','twitter'];
+const WORDS  = ['verify','suspended','confirm','urgent','update','secure','alert','limited','winner'];
 
-    if (url === "") {
-        result.innerHTML = "❗ Please enter a URL";
-        result.style.color = "black";
-        return;
+function tryUrl(u){ document.getElementById('urlInput').value=u; scan(); }
+
+function analyze(raw) {
+  const url   = raw.startsWith('http') ? raw : 'https://'+raw;
+  let host='', path='', query='';
+  try {
+    const p = new URL(url);
+    host  = p.hostname.toLowerCase();
+    path  = p.pathname.toLowerCase();
+    query = p.search.toLowerCase();
+  } catch(e) { return null; }
+
+  const full = host+path+query;
+  const checks = [];
+
+  const isHttps = url.startsWith('https');
+  checks.push({ name:'HTTPS Protocol', pass:isHttps,
+    detail: isHttps ? 'Connection is encrypted — data is safe in transit'
+                    : 'No HTTPS — your data travels unencrypted and can be stolen' });
+
+  const tld = TLDS.find(t=>host.endsWith(t));
+  checks.push({ name:'Suspicious TLD', pass:!tld,
+    detail: tld ? `"${tld}" is a risky extension — hackers get these for free to register fake domains`
+                : 'Domain extension looks normal (.com, .org, .net)' });
+
+  const isIp = /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
+  checks.push({ name:'IP Address Used', pass:!isIp,
+    detail: isIp ? 'Raw IP address used — real websites never do this, identity is hidden'
+                 : 'Uses a proper domain name — normal' });
+
+  const dots = (host.match(/\./g)||[]).length;
+  checks.push({ name:'Subdomain Count', pass:dots<3,
+    detail: dots>=3 ? `${dots} dots found — real domain may be buried deep in subdomains`
+                    : 'Subdomain structure looks normal' });
+
+  const main  = host.split('.').slice(-2,-1)[0]||'';
+  const brand = BRANDS.find(b=>host.includes(b)&&!main.includes(b));
+  checks.push({ name:'Brand Spoofing', pass:!brand,
+    detail: brand ? `"${brand}" placed in subdomain — this is NOT ${brand}.com, just uses the name to trick you`
+                  : 'No well-known brand name being misused' });
+
+  const word = WORDS.find(w=>full.includes(w));
+  checks.push({ name:'Suspicious Keywords', pass:!word,
+    detail: word ? `Keyword "${word}" found — creates panic so you click without thinking`
+                 : 'No urgency-inducing keywords in the URL' });
+
+  const long = url.length > 100;
+  checks.push({ name:'URL Length', pass:!long,
+    detail: long ? `Very long URL (${url.length} chars) — may be hiding the real destination`
+                 : 'URL length looks normal' });
+
+  const flags = checks.filter(c=>!c.pass).length;
+  const verdict = flags===0 ? 'SAFE' : flags<=2 ? 'SUSPICIOUS' : 'PHISHING';
+  return { verdict, flags, checks };
+}
+
+function scan() {
+  const raw = document.getElementById('urlInput').value.trim();
+  if(!raw) return;
+
+  const btn = document.getElementById('scanBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>Scanning';
+
+  setTimeout(()=>{
+    const result = analyze(raw);
+    btn.disabled = false;
+    btn.textContent = 'Scan';
+
+    if(!result) {
+      alert('Invalid URL — please include a valid address.');
+      return;
     }
+    render(result);
+  }, 400);
+}
 
-    let score = 0;
+function render({ verdict, flags, checks }) {
+  // Verdict box
+  const vbox  = document.getElementById('verdict-box');
+  const vtitle = document.getElementById('verdict-title');
+  const vsub   = document.getElementById('verdict-sub');
 
-    // Rule 1: Length
-    if (url.length > 75) score++;
+  vbox.className = '';
+  vbox.style.display = 'block';
 
-    // Rule 2: Contains @
-    if (url.includes("@")) score += 2;
+  const cfg = {
+    SAFE:       { cls:'verdict-safe',   icon:'✓', color:'#22c55e', sub:'No phishing indicators found — this URL looks clean.' },
+    SUSPICIOUS: { cls:'verdict-warn',   icon:'⚠', color:'#f59e0b', sub:`${flags} warning(s) found — proceed with caution.` },
+    PHISHING:   { cls:'verdict-danger', icon:'✗', color:'#ef4444', sub:`${flags} red flags detected — this is likely a phishing site!` },
+  }[verdict];
 
-    // Rule 3: Too many dots
-    if ((url.match(/\./g) || []).length > 3) score++;
+  vbox.classList.add(cfg.cls);
+  vtitle.style.color = cfg.color;
+  vtitle.textContent = `${cfg.icon}  ${verdict}`;
+  vsub.textContent   = cfg.sub;
 
-    // Rule 4: No HTTPS
-    if (!url.startsWith("https")) score++;
+  // Check rows
+  const list = document.getElementById('checks-list');
+  list.innerHTML = '';
+  checks.forEach(c=>{
+    const row = document.createElement('div');
+    row.className = 'check-row ' + (c.pass?'pass':'fail');
+    row.innerHTML = `
+      <div class="check-icon" style="color:${c.pass?'#22c55e':'#ef4444'}">${c.pass?'✓':'✗'}</div>
+      <div class="check-info">
+        <div class="check-name">${c.name}</div>
+        <div class="check-detail">${c.detail}</div>
+      </div>
+      <div class="check-badge ${c.pass?'badge-pass':'badge-fail'}">${c.pass?'PASS':'FAIL'}</div>
+    `;
+    list.appendChild(row);
+  });
 
-    // Rule 5: IP address
-    let ipPattern = /(\d{1,3}\.){3}\d{1,3}/;
-    if (ipPattern.test(url)) score += 2;
+  const passed = checks.filter(c=>c.pass).length;
+  document.getElementById('summary').textContent =
+    `${passed} passed · ${flags} failed · ${checks.length} total checks`;
 
-    // Rule 6: Suspicious words
-    let words = ["login", "verify", "bank", "secure", "account"];
-    for (let word of words) {
-        if (url.toLowerCase().includes(word)) {
-            score++;
-            break;
-        }
-    }
-
-    // Final result
-    if (score >= 4) {
-        result.innerHTML = "❌ Dangerous URL";
-        result.style.color = "red";
-    } else if (score >= 2) {
-        result.innerHTML = "⚠️ Suspicious URL";
-        result.style.color = "orange";
-    } else {
-        result.innerHTML = "✅ Safe URL";
-        result.style.color = "green";
-    }
+  document.getElementById('results-box').style.display = 'block';
 }
 </script>
-
 </body>
 </html>
